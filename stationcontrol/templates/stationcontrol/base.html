@@ -1,0 +1,204 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}StationControl{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: { fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] } } }
+        }
+    </script>
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 font-sans text-slate-900 antialiased">
+
+{% if request.user.is_authenticated %}
+<header class="sticky top-0 z-40 bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-6">
+
+        <!-- Logo + Brand -->
+        <div class="flex items-center gap-3 shrink-0">
+            <img src="{% static 'stationcontrol/logo.png' %}"
+                alt="StationControl"
+                class="w-20 h-20 rounded-xl object-cover"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+
+            <!-- Fallback logo -->
+            <div class="w-20 h-20 rounded-xl bg-green-600 items-center justify-center shrink-0"
+                style="display:none;">
+                <svg class="w-6 h-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor">
+                    <path stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25A2.25 2.25 0 0 1 5.25 3h13.5A2.25 2.25 0 0 1 21 5.25Z" />
+                </svg>
+            </div>
+
+            <div class="leading-tight">
+                <div class="text-lg font-bold text-slate-900">
+                    Station<span class="text-green-600">Control</span>
+                </div>
+                <div class="text-xs text-slate-500">
+                    Computer Café Management
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex flex-wrap items-center gap-1">
+            {% url 'stationcontrol:dashboard' as dash_url %}
+
+            <a href="{{ dash_url }}"
+                class="text-sm font-semibold rounded-full px-4 py-2 transition
+                {% if request.path == dash_url %}
+                    text-green-700 bg-green-50
+                {% else %}
+                    text-slate-600 hover:bg-slate-100 hover:text-slate-900
+                {% endif %}">
+                Dashboard
+            </a>
+
+            <a href="{% url 'stationcontrol:manage_pcs' %}"
+                class="text-sm font-semibold rounded-full px-4 py-2 transition
+                {% if '/pcs/' in request.path %}
+                    text-green-700 bg-green-50
+                {% else %}
+                    text-slate-600 hover:bg-slate-100 hover:text-slate-900
+                {% endif %}">
+                Manage PCs
+            </a>
+
+            <a href="{% url 'stationcontrol:reports' %}"
+                class="text-sm font-semibold rounded-full px-4 py-2 transition
+                {% if '/reports/' in request.path %}
+                    text-green-700 bg-green-50
+                {% else %}
+                    text-slate-600 hover:bg-slate-100 hover:text-slate-900
+                {% endif %}">
+                Reports
+            </a>
+        </nav>
+
+        <!-- User -->
+        <div class="flex items-center gap-3 shrink-0">
+            <div class="hidden sm:flex items-center gap-2.5 pl-3 border-l border-slate-200">
+                <div class="w-9 h-9 rounded-full bg-green-100 text-green-700
+                            flex items-center justify-center text-xs font-bold">
+                    {{ request.user.username|first|upper }}
+                </div>
+
+                <div class="leading-tight">
+                    <p class="text-sm font-semibold">
+                        {{ request.user.username }}
+                    </p>
+                    <p class="text-[11px] text-slate-400">
+                        Manager
+                    </p>
+                </div>
+            </div>
+
+            <a href="{% url 'stationcontrol:logout' %}"
+                title="Logout"
+                class="w-10 h-10 rounded-full border border-slate-200
+                       hover:bg-slate-100 flex items-center justify-center transition">
+
+                <svg class="w-5 h-5 text-slate-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor">
+                    <path stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                </svg>
+            </a>
+        </div>
+
+    </div>
+</header>
+{% endif %}
+
+    {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-4 space-y-2">
+        {% for message in messages %}
+        <div
+            class="rounded-xl px-4 py-3 text-sm font-semibold border
+                {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800{% else %}bg-slate-100 border-slate-300 text-slate-700{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+    {% if request.user.is_authenticated %}
+    <footer class="pb-8 pt-4 text-center">
+        <p class="text-[11px] text-slate-400">StationControl v1.0 · Admin access only · Data synced live</p>
+    </footer>
+    {% endif %}
+    
+{% if request.user.is_authenticated %}
+<div id="toast-root" class="fixed bottom-6 right-6 z-[60] space-y-2"></div>
+<script>
+(function () {
+    let version = null;
+    let failures = 0;
+
+    function showToast(text) {
+        const root = document.getElementById('toast-root');
+        if (!root) return;
+        const el = document.createElement('div');
+        el.className = 'bg-slate-900 text-white text-sm font-semibold rounded-xl px-4 py-3 shadow-2xl flex items-center gap-3 opacity-0 translate-y-2 transition-all duration-300';
+        el.innerHTML = '<span class="text-green-400">🔔</span><span></span>';
+        el.lastElementChild.textContent = text;
+        root.appendChild(el);
+        requestAnimationFrame(() => el.classList.remove('opacity-0', 'translate-y-2'));
+        setTimeout(() => {
+            el.classList.add('opacity-0', 'translate-y-2');
+            setTimeout(() => el.remove(), 350);
+        }, 5000);
+    }
+
+    async function poll() {
+        if (document.hidden) { setTimeout(poll, 2000); return; }  // don't hold connections in background tabs
+        try {
+            const r = await fetch('/stationcontrol/events/wait/?v=' + (version ?? ''), { cache: 'no-store' });
+            if (r.redirected || !r.ok) throw new Error('bad response');
+            const data = await r.json();
+            failures = 0;
+            if (version !== null && data.version !== version && data.event) {
+                showToast(data.event);
+                document.body.dispatchEvent(new CustomEvent('refresh-now'));
+            }
+            version = data.version;
+            setTimeout(poll, 500);
+        } catch (e) {
+            failures++;
+            setTimeout(poll, Math.min(1000 * failures, 10000));  // back off instead of hammering
+        }
+    }
+    poll();
+})();
+</script>
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+
+</html>

@@ -1,0 +1,30 @@
+{% if state == 'valid' %}
+<div class="rounded-xl bg-green-50 border border-green-200 p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+    <div class="flex items-start gap-3">
+        <div class="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+        </div>
+        <div>
+            <p class="text-sm font-bold text-green-800">Code verified — {{ reservation.pc.name }}</p>
+            <p class="text-xs text-green-700/80 mt-0.5">
+                Reserved · ₱{{ reservation.pc.hourly_rate|floatformat:2 }}/hr · Hold valid for {{ minutes_left }}:{{ seconds_left|stringformat:'02d' }}
+            </p>
+        </div>
+    </div>
+    <form method="post" action="{% url 'stationcontrol:start_session' reservation.id %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-5 py-2.5 transition whitespace-nowrap">Start Session</button>
+    </form>
+</div>
+{% elif state == 'invalid' %}
+<div class="rounded-xl bg-slate-50 border border-slate-200 p-4 flex items-start gap-3">
+    <div class="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+    </div>
+    <div>
+        <p class="text-sm font-bold text-slate-800">Code not found</p>
+        <p class="text-xs text-slate-500 mt-0.5">Double-check the code — or the 10-minute hold may have expired.</p>
+    </div>
+</div>
+{% endif %}

@@ -1,0 +1,185 @@
+{% extends 'stationcontrol/base.html' %}
+{% block title %}Dashboard — StationControl{% endblock %}
+
+{% block content %}
+<main class="max-w-7xl mx-auto px-4 sm:px-6 py-8"
+      x-data="{ endModal: false, endPc: '', endStart: '', endElapsed: '', endCost: '' }">
+
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
+            <p class="text-sm text-slate-500 mt-1">Monitor stations, verify reservations, and track revenue in real time.</p>
+        </div>
+        <span class="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-full px-3.5 py-2 text-xs font-semibold text-slate-600 w-fit">
+            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            <span x-init="today = new Date().toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric' })"
+                  x-text="today"></span>
+        </span>
+    </div>
+
+    <!-- ===== Verify Card — STATIC (outside the swap region: typing can never be wiped) ===== -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-6">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+            <h3 class="font-semibold">Verify Reservation Code</h3>
+            <span class="text-[11px] text-slate-400 hidden sm:flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Enter the code shown on the customer's phone
+            </span>
+        </div>
+        <div class="flex gap-3 mt-4">
+            <input id="verify-input" type="text" name="code" maxlength="12" placeholder="e.g. SLT-9X4K2" autocomplete="off"
+                   hx-get="{% url 'stationcontrol:verify_code' %}"
+                   hx-trigger="input changed delay:400ms, change"
+                   hx-target="#verify-result"
+                   hx-swap="innerHTML"
+                   class="flex-1 rounded-xl border border-slate-200 px-4 py-3 font-mono text-sm uppercase tracking-widest placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition">
+            <button type="button"
+                    hx-get="{% url 'stationcontrol:verify_code' %}"
+                    hx-include="#verify-input"
+                    hx-trigger="click"
+                    hx-target="#verify-result"
+                    hx-swap="innerHTML"
+                    class="rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-8 transition">Verify</button>
+        </div>
+        <div id="verify-result" class="mt-4"></div>
+    </div>
+
+    <!-- ===== Live region: stats, sessions, walk-ins — swapped by HTMX ===== -->
+    <div hx-get="{% url 'stationcontrol:stats_partial' %}"
+         hx-trigger="every 10s, refresh-now from:body"
+         hx-swap="innerHTML">
+        {% include 'stationcontrol/partials/dashboard_content.html' %}
+    </div>
+
+    <!-- ===== End & Collect modal — action is set by JS, not Alpine ===== -->
+    <div x-show="endModal" x-cloak
+         class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div class="w-14 h-14 mx-auto rounded-full bg-green-100 flex items-center justify-center">
+                <svg class="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold mt-4">End session for <span x-text="endPc"></span>?</h3>
+            <p class="text-sm text-slate-500 mt-1.5">
+                Started at <span class="font-mono text-xs" x-text="endStart"></span> ·
+                <span x-text="endElapsed"></span> used
+            </p>
+            <div class="rounded-xl bg-green-50 border border-green-100 py-4 mt-5">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-green-700/60">Total charge</p>
+                <p class="text-3xl font-bold mt-1 text-green-700">₱<span x-text="endCost"></span></p>
+                <p class="text-[11px] text-slate-400 mt-1">Billed per exact minute</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button @click="endModal = false"
+                        class="rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">Cancel</button>
+                <form id="end-form" method="post" action="" class="contents">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2.5 transition">End &amp; Collect</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // ---- Live clocks ----
+    function tickClocks() {
+        const now = new Date();
+        document.querySelectorAll('[data-session-start]').forEach(el => {
+            const start = new Date(el.dataset.sessionStart);
+            const mins = Math.max(0, Math.floor((now - start) / 60000));
+            el.textContent = String(Math.floor(mins / 60)).padStart(2, '0') + 'h ' + String(mins % 60).padStart(2, '0') + 'm';
+            const costEl = el.closest('tr') ? el.closest('tr').querySelector('[data-session-cost]') : null;
+            if (costEl) {
+                const rate = parseFloat(costEl.dataset.sessionCost);
+                costEl.textContent = '₱' + (mins * rate / 60).toFixed(2);
+            }
+        });
+        document.querySelectorAll('[data-hold-expiry]').forEach(el => {
+            const expiry = new Date(el.dataset.holdExpiry);
+            const left = Math.max(0, Math.ceil((expiry - now) / 1000));
+            el.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0') + ' left';
+        });
+    }
+
+    // ---- Walk-in "See More" toggle ----
+    window.__walkinExpanded = window.__walkinExpanded || false;
+
+    function applyWalkinState() {
+        document.querySelectorAll('.walkin-item[data-extra="1"]').forEach(el => {
+            el.style.display = window.__walkinExpanded ? '' : 'none';
+        });
+        const toggle = document.getElementById('walkin-toggle');
+        if (toggle) {
+            toggle.textContent = window.__walkinExpanded
+                ? 'See Less ▲'
+                : `See More (${toggle.dataset.collapsedCount} more)`;
+        }
+    }
+
+    document.addEventListener('click', e => {
+        if (e.target.closest('#walkin-toggle')) {
+            window.__walkinExpanded = !window.__walkinExpanded;
+            applyWalkinState();
+        }
+    });
+
+    // ---- End Session: fetch bill → open modal (form action set by plain JS — no Alpine needed) ----
+    function getCookie(name) {
+        const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return m ? decodeURIComponent(m[2]) : null;
+    }
+
+    function fallbackEnd(btn) {
+        if (confirm('End this session now?')) {
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = btn.dataset.url;
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = 'csrfmiddlewaretoken';
+            csrf.value = getCookie('csrftoken') || '';
+            form.appendChild(csrf);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('[data-end-session]');
+        if (!btn) return;
+        e.preventDefault();
+
+        fetch(btn.dataset.modalUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => {
+                if (!r.ok) throw new Error('Server returned ' + r.status);
+                return r.json();
+            })
+            .then(data => {
+                // ⭐ Set the form action imperatively — this is the money path
+                const form = document.getElementById('end-form');
+                if (form) form.setAttribute('action', data.url);
+
+                const mainEl = document.querySelector('main');
+                if (!window.Alpine || !mainEl) { fallbackEnd(btn); return; }
+                const scope = Alpine.$data(mainEl);
+                scope.endPc = data.pc;
+                scope.endStart = data.start;
+                scope.endElapsed = data.elapsed;
+                scope.endCost = data.cost;
+                scope.endModal = true;
+            })
+            .catch(err => {
+                console.error('End-session modal failed:', err);
+                fallbackEnd(btn);
+            });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => { tickClocks(); applyWalkinState(); });
+    setInterval(tickClocks, 1000);
+    document.body.addEventListener('htmx:afterSwap', () => { tickClocks(); applyWalkinState(); });
+</script>
+{% endblock %}

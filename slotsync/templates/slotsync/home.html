@@ -1,0 +1,69 @@
+{% extends 'slotsync/base.html' %}
+
+{% block content %}
+<main class="max-w-md mx-auto px-4 py-6 space-y-4">
+
+    <!-- Hero -->
+    <div class="rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 p-5 text-white shadow-lg shadow-green-500/20">
+        <h1 class="text-xl font-bold tracking-tight">Find a PC &amp; reserve it in seconds.</h1>
+        <p class="text-[13px] text-green-50/90 mt-1.5">No sign-up needed — just show your code at the counter.</p>
+        <div class="flex flex-wrap gap-2 mt-4">
+            <span class="text-xs font-semibold bg-white/15 rounded-full px-3 py-1.5">{{ available_count }} PCs available</span>
+            <span class="text-xs font-semibold bg-white/15 rounded-full px-3 py-1.5">₱20 / hour</span>
+            <span class="text-xs font-semibold bg-white/15 rounded-full px-3 py-1.5">10-min hold</span>
+        </div>
+    </div>
+
+    <!-- Live list: AVAILABLE PCs only. HTMX refreshes every 10s. -->
+    <div hx-get="{% url 'slotsync:pc_list_partial' %}"
+         hx-trigger="every 10s, customer-refresh from:body"
+         hx-swap="innerHTML">
+        {% include 'slotsync/partials/pc_list.html' %}
+    </div>
+
+    <!-- How it works -->
+    <div class="grid grid-cols-3 gap-3 pt-1">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5 text-center">
+            <div class="w-8 h-8 mx-auto rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">1</div>
+            <p class="text-[11px] font-semibold mt-2 text-slate-600">Pick a PC</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5 text-center">
+            <div class="w-8 h-8 mx-auto rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">2</div>
+            <p class="text-[11px] font-semibold mt-2 text-slate-600">Get your code</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5 text-center">
+            <div class="w-8 h-8 mx-auto rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">3</div>
+            <p class="text-[11px] font-semibold mt-2 text-slate-600">Show at counter</p>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // "See More" toggle — state lives on window so it survives HTMX refreshes.
+    window.__pcExpanded = window.__pcExpanded || false;
+
+    function applyPcState() {
+        document.querySelectorAll('.pc-item[data-extra="1"]').forEach(el => {
+            el.style.display = window.__pcExpanded ? '' : 'none';
+        });
+        const toggle = document.getElementById('pc-toggle');
+        if (toggle) {
+            toggle.textContent = window.__pcExpanded
+                ? 'See Less ▲'
+                : `See More (${toggle.dataset.collapsedCount} more)`;
+        }
+    }
+
+    document.addEventListener('click', e => {
+        if (e.target.closest('#pc-toggle')) {
+            window.__pcExpanded = !window.__pcExpanded;
+            applyPcState();
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', applyPcState);
+    document.body.addEventListener('htmx:afterSwap', applyPcState);
+</script>
+{% endblock %}

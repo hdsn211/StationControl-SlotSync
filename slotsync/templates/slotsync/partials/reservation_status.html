@@ -1,0 +1,9 @@
+{% if completed_session %}
+<div x-init="status = 'DONE'; finalCost = '{{ completed_session.total_cost|floatformat:2 }}'; finalMinutes = {{ completed_session.elapsed_minutes }}"></div>
+{% elif reservation.status == 'CLAIMED' %}
+<div x-init="status = 'CLAIMED'"></div>
+{% elif reservation.status == 'EXPIRED' %}
+<div x-init="status = 'EXPIRED'"></div>
+{% elif reservation.status == 'CANCELLED' %}
+<div x-init="status = 'CANCELLED'"></div>
+{% endif %}
