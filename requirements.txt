@@ -1,0 +1,1 @@
+Django==6.1gunicornwhitenoisedj-database-urlpsycopg2-binarymysqlclientreportlab
