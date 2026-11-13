@@ -1,0 +1,171 @@
+PISONET MANAGEMENT SYSTEM - SCHOOL DEMO INSTRUCTIONS
+====================================================
+
+PURPOSE
+-------
+These instructions explain how to run the Django project on a school computer
+and let a phone on the same Wi-Fi network open SlotSync by scanning a QR code.
+
+IMPORTANT: The QR code must contain the SCHOOL COMPUTER'S reachable LAN IP,
+not http://127.0.0.1:8000/. The address 127.0.0.1 refers to the device opening
+it, so it will not let a phone reach the school computer.
+
+BEFORE THE DEMONSTRATION
+------------------------
+1. Bring your GitHub repository URL and make sure the latest project changes
+   have been pushed.
+2. Bring a phone with a camera/QR scanner.
+3. Connect the school computer and phone to the SAME Wi-Fi network.
+   If the school network blocks device-to-device connections, ask permission
+   to use a personal hotspot or another approved network.
+4. Make sure the school computer has Python installed.
+
+A. CLONE THE PROJECT
+--------------------
+1. Open PowerShell or the VS Code terminal.
+2. Change to the folder where you want the project saved.
+3. Clone the repository (replace the URL with your actual GitHub URL):
+
+   git clone https://github.com/YOUR-USERNAME/YOUR-REPOSITORY.git
+
+4. Open the cloned project folder in VS Code. The folder should contain
+   manage.py, requirements.txt, generate_qr.py, and this instruction file.
+
+B. CREATE THE PYTHON ENVIRONMENT
+--------------------------------
+Run these commands from the folder containing manage.py:
+
+   python -m venv .venv
+   .venv\Scripts\Activate.ps1
+   python -m pip install --upgrade pip
+   python -m pip install -r requirements.txt
+
+If PowerShell blocks activation, you can run this command for the current
+terminal session, then activate again:
+
+   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+IMPORTANT DEPENDENCY:
+---------------------
+The requirements.txt file must include this package on its own line:
+
+   qrcode[pil]
+
+If it is missing, install it with:
+
+   python -m pip install "qrcode[pil]"
+
+C. PREPARE THE DATABASE
+-----------------------
+Run:
+
+   python manage.py migrate
+
+If the project needs an administrator account and no demo account/database
+has been provided, create one with:
+
+   python manage.py createsuperuser
+
+Follow the prompts. Use only demonstration credentials approved for the
+school demo. Do not use a personal password you use elsewhere.
+
+NOTE: A fresh clone with no SQLite database starts with an empty database.
+You may need to create demo records (PCs, staff, etc.) through the admin or
+application interface before demonstrating all features.
+
+D. FIND THE SCHOOL COMPUTER'S IP ADDRESS
+----------------------------------------
+1. Open a second PowerShell/CMD window or use the same terminal before
+   starting the server.
+2. Run:
+
+   ipconfig
+
+3. Under the active Wi-Fi adapter, find the IPv4 Address, for example:
+
+   192.168.1.105
+
+Use the actual IPv4 address shown on the school computer. Do not copy the
+example address above.
+
+E. ALLOW THE IP IN DJANGO
+-------------------------
+Open the Django settings file (usually pisonet/settings.py, the folder that
+contains settings.py) and find ALLOWED_HOSTS.
+
+Add the actual school computer IP address, for example:
+
+   ALLOWED_HOSTS = ["127.0.0.1", "localhost", "192.168.1.105"]
+
+Replace 192.168.1.105 with the actual IPv4 address. Save the file.
+
+F. START THE DJANGO SERVER
+--------------------------
+From the folder containing manage.py, run:
+
+   python manage.py runserver 0.0.0.0:8000
+
+Keep this terminal open while people are using SlotSync. If Windows Firewall
+asks whether Python may communicate on the network, allow it only on the
+appropriate trusted Private network, if permitted by school policy.
+
+G. TEST SLOT SYNC ON THE PHONE BEFORE MAKING THE QR CODE
+--------------------------------------------------------
+On the phone, open a browser and enter:
+
+   http://SCHOOL-COMPUTER-IP:8000/
+
+Example only:
+
+   http://192.168.1.105:8000/
+
+Replace the example with the actual school computer IP. SlotSync should load.
+If it does not load:
+- Confirm both devices are on the same Wi-Fi.
+- Confirm the Django server is still running.
+- Recheck the IP address and ALLOWED_HOSTS.
+- Check Windows Firewall and whether the school Wi-Fi blocks device-to-device
+  connections. Do not bypass school network rules.
+
+H. GENERATE THE QR CODE
+-----------------------
+Open a NEW terminal in the project folder, activate the environment if needed,
+and run:
+
+   python generate_qr.py
+
+When prompted for the URL, enter the same working phone URL, for example:
+
+   http://192.168.1.105:8000/
+
+The script should create slotsync_qr.png in the project folder. Open that image
+on the computer, then scan it with the phone camera and tap the link.
+
+If generate_qr.py does not ask for a URL, update it so it prompts for the URL
+instead of permanently using 127.0.0.1. Do not use localhost/127.0.0.1 in the
+QR code for phone access.
+
+IMPORTANT LIMITATIONS
+---------------------
+- This QR code works only while the Django server is running and the phone can
+  reach the school computer over the same network.
+- The school computer's IP can change. If it changes, repeat sections D, E,
+  G, and H, then generate a new QR code.
+- Closing the server terminal stops SlotSync.
+- This is a local classroom demo, not a public internet deployment. For access
+  outside the local network, deploy the application to a hosting service and
+  generate a QR code containing its public HTTPS URL.
+- Do not expose Django's development server to the public internet.
+
+GIT / SECURITY REMINDERS
+------------------------
+- Do not upload .venv/ or venv/ folders to GitHub.
+- Do not upload passwords, API keys, production SECRET_KEY values, or .env files.
+- Do not commit private customer information or real user credentials.
+- Keep requirements.txt and the source code in the repository.
+- Decide deliberately whether a demo SQLite database should be included. A
+  fresh database created by migrate will be empty; only commit a database if
+  it contains safe, fictional demo data and your project requires it.
+- After making changes, commit and push them from your development computer.
+
+END OF SCHOOL DEMO INSTRUCTIONS

@@ -74,6 +74,7 @@
                 Dashboard
             </a>
 
+            {% if request.user.is_superuser or request.user.groups.all.0.name == 'Owner' %}
             <a href="{% url 'stationcontrol:manage_pcs' %}"
                 class="text-sm font-semibold rounded-full px-4 py-2 transition
                 {% if '/pcs/' in request.path %}
@@ -83,6 +84,7 @@
                 {% endif %}">
                 Manage PCs
             </a>
+            {% endif %}
 
             <a href="{% url 'stationcontrol:reports' %}"
                 class="text-sm font-semibold rounded-full px-4 py-2 transition
@@ -93,6 +95,18 @@
                 {% endif %}">
                 Reports
             </a>
+
+            {% if request.user.is_superuser or request.user.groups.all.0.name == 'Owner' %}
+            <a href="{% url 'stationcontrol:manage_staff' %}"
+                class="text-sm font-semibold rounded-full px-4 py-2 transition
+                {% if '/staff/' in request.path %}
+                    text-green-700 bg-green-50
+                {% else %}
+                    text-slate-600 hover:bg-slate-100 hover:text-slate-900
+                {% endif %}">
+                Staff
+            </a>
+            {% endif %}
         </nav>
 
         <!-- User -->
@@ -100,18 +114,20 @@
             <div class="hidden sm:flex items-center gap-2.5 pl-3 border-l border-slate-200">
                 <div class="w-9 h-9 rounded-full bg-green-100 text-green-700
                             flex items-center justify-center text-xs font-bold">
-                    {{ request.user.username|first|upper }}
+                    {{ request.user.first_name|first|default:request.user.username|first|upper }}
                 </div>
 
                 <div class="leading-tight">
                     <p class="text-sm font-semibold">
-                        {{ request.user.username }}
+                        {{ request.user.first_name|default:request.user.username }}
+                        {% if request.user.last_name %}{{ request.user.last_name }}{% endif %}
                     </p>
                     <p class="text-[11px] text-slate-400">
-                        Manager
+                        {% if request.user.is_superuser or request.user.groups.all.0.name == 'Owner' %}Owner{% else %}Staff{% endif %}
                     </p>
                 </div>
             </div>
+
 
             <a href="{% url 'stationcontrol:logout' %}"
                 title="Logout"
@@ -153,7 +169,7 @@
         <p class="text-[11px] text-slate-400">StationControl v1.0 · Admin access only · Data synced live</p>
     </footer>
     {% endif %}
-    
+
 {% if request.user.is_authenticated %}
 <div id="toast-root" class="fixed bottom-6 right-6 z-[60] space-y-2"></div>
 <script>
@@ -177,7 +193,7 @@
     }
 
     async function poll() {
-        if (document.hidden) { setTimeout(poll, 2000); return; }  // don't hold connections in background tabs
+        if (document.hidden) { setTimeout(poll, 2000); return; }
         try {
             const r = await fetch('/stationcontrol/events/wait/?v=' + (version ?? ''), { cache: 'no-store' });
             if (r.redirected || !r.ok) throw new Error('bad response');
@@ -191,7 +207,7 @@
             setTimeout(poll, 500);
         } catch (e) {
             failures++;
-            setTimeout(poll, Math.min(1000 * failures, 10000));  // back off instead of hammering
+            setTimeout(poll, Math.min(1000 * failures, 10000));
         }
     }
     poll();

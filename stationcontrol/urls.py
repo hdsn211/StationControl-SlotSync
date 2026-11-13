@@ -30,4 +30,8 @@ urlpatterns = [
 
     path('events/wait/', views.events_wait, name='events_wait'),
     path('notifications/', views.notifications, name='notifications'),
+    # Staff Management
+    path('staff/', views.manage_staff, name='manage_staff'),
+    path('staff/create/', views.create_staff, name='create_staff'),
+    path('staff/<int:user_id>/toggle-active/', views.toggle_staff_active, name='toggle_staff_active'),
 ]

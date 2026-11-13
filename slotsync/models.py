@@ -141,6 +141,11 @@ class Session(models.Model):
         related_name='session',
     )
 
+    handled_by = models.ForeignKey(
+        'auth.User', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='sessions_handled', verbose_name='handled by'
+    )
+
     start_time = models.DateTimeField(
         auto_now_add=True,
     )

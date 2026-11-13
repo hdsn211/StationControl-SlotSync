@@ -159,7 +159,7 @@
                 return r.json();
             })
             .then(data => {
-                // ⭐ Set the form action imperatively — this is the money path
+                //Set the form action imperatively — this is the money path
                 const form = document.getElementById('end-form');
                 if (form) form.setAttribute('action', data.url);
 
